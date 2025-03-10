@@ -73,4 +73,5 @@ def plot_histogram(image, save_path):
     plt.close()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Render передает PORT в переменные окружения
+    app.run(host="0.0.0.0", port=port, debug=False)  # Открываем порт для внешнего мира

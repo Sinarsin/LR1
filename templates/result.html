@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результат смешивания</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+        h1 {
+            font-weight: 600;
+        }
+        .container {
+            width: 60%;
+            margin: auto;
+            padding: 20px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        img {
+            width: 80%;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .histogram-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .histogram {
+            width: 30%;
+            text-align: center;
+        }
+        button {
+            background: #ff9800;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #e68900;
+        }
+    </style>
+</head>
+<body>
+    <h1>Результат смешивания</h1>
+    <div class="container">
+        <p><b>Нажмите на изображение, чтобы открыть в новой вкладке:</b></p>
+        <a href="{{ result_image }}" target="_blank">
+            <img src="{{ result_image }}" alt="Смешанное изображение">
+        </a><br>
+
+        <h2>Гистограммы</h2>
+        <div class="histogram-container">
+    <div class="histogram">
+        <h3>Изображение 1</h3>
+        <img src="{{ hist1 }}" alt="Гистограмма 1">
+    </div>
+    <div class="histogram">
+        <h3>Изображение 2</h3>
+        <img src="{{ hist2 }}" alt="Гистограмма 2">
+    </div>
+    <div class="histogram">
+        <h3>Результат</h3>
+        <img src="{{ hist_blended }}" alt="Гистограмма результата">
+    </div>
+</div>
+
+        <button onclick="window.history.back()">Назад</button>
+    </div>
+</body>
+</html>

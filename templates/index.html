@@ -3,22 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка изображений</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Смешивание изображений</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+        }
+        h1 {
+            font-weight: 600;
+        }
+        .container {
+            width: 50%;
+            margin: auto;
+            padding: 20px;
+            background: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            color: white;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        input[type="range"] {
+            width: 80%;
+            accent-color: #ff9800;
+        }
+        button {
+            background: #ff9800;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #e68900;
+        }
+    </style>
 </head>
 <body>
-    <h1>Загрузка изображений</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <label>Выберите первое изображение:</label>
-        <input type="file" name="image1" required><br><br>
+    <h1>Смешивание изображений</h1>
+    <div class="container">
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label>Выберите два изображения:</label><br>
+            <input type="file" name="image1" required><br>
+            <input type="file" name="image2" required><br>
+            
+            <div class="slider-container">
+                <label>Коэффициент смешивания (0-1):</label><br>
+                <input type="range" name="alpha" min="0" max="1" step="0.01" value="0.5" 
+                       oninput="this.nextElementSibling.value = this.value">
+                <output>0.5</output>
+            </div>
 
-        <label>Выберите второе изображение:</label>
-        <input type="file" name="image2" required><br><br>
-
-        <label>Коэффициент смешивания (0.0 - 1.0):</label>
-        <input type="number" name="alpha" step="0.1" min="0" max="1" value="0.5" required><br><br>
-
-        <button type="submit">Загрузить</button>
-    </form>
+            <button type="submit">Смешать изображения</button>
+        </form>
+    </div>
 </body>
 </html>

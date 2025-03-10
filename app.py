@@ -1,103 +1,76 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_file, redirect, url_for
 from PIL import Image
 import numpy as np
-import os
 import matplotlib.pyplot as plt
+import os
 import io
-import base64
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Папка для сохранения изображений
-UPLOAD_FOLDER = "static/uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-# Разрешённые форматы файлов
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+# Разрешенные форматы файлов
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 def allowed_file(filename):
-    """Проверка, является ли файл изображением"""
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+    """Проверяет, является ли загружаемый файл изображением."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
-def home():
-    return render_template("index.html")
+def index():
+    """Отображает главную страницу с формой загрузки."""
+    return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    # Проверяем, загружены ли файлы
+    """Обрабатывает загрузку изображений, выполняет смешивание и строит гистограммы."""
     if 'image1' not in request.files or 'image2' not in request.files:
-        return "Ошибка: Файлы не загружены", 400
+        return redirect(url_for('index'))
     
-    image1 = request.files['image1']
-    image2 = request.files['image2']
+    file1 = request.files['image1']
+    file2 = request.files['image2']
     
-    if image1.filename == "" or image2.filename == "":
-        return "Ошибка: Файлы не выбраны", 400
+    if not (allowed_file(file1.filename) and allowed_file(file2.filename)):
+        return "Ошибка: загружены неверные файлы"
 
-    # Проверяем расширение файлов
-    if not allowed_file(image1.filename) or not allowed_file(image2.filename):
-        return "Ошибка: Неподдерживаемый формат файла. Разрешены только PNG, JPG, JPEG.", 400
+    img1_path = os.path.join(app.config['UPLOAD_FOLDER'], file1.filename)
+    img2_path = os.path.join(app.config['UPLOAD_FOLDER'], file2.filename)
+    
+    file1.save(img1_path)
+    file2.save(img2_path)
 
-    alpha = float(request.form['alpha'])
+    return process_images(img1_path, img2_path, float(request.form['alpha']))
 
-    # Открываем изображения
-    img1 = Image.open(image1).convert("RGBA")
-    img2 = Image.open(image2).convert("RGBA")
+def process_images(img1_path, img2_path, alpha):
+    """Обрабатывает изображения: смешивание и создание гистограмм."""
+    img1 = Image.open(img1_path).convert('RGB')
+    img2 = Image.open(img2_path).convert('RGB')
+    img1, img2 = img1.resize((400, 400)), img2.resize((400, 400))
+    blended = Image.blend(img1, img2, alpha)
 
-    # Приводим изображения к одинаковому размеру
-    img1 = img1.resize((500, 500))
-    img2 = img2.resize((500, 500))
+    result_path = 'static/uploads/result.png'
+    hist1_path = 'static/uploads/hist1.png'
+    hist2_path = 'static/uploads/hist2.png'
+    hist_blended_path = 'static/uploads/hist_blended.png'
 
-    # Преобразуем в массивы numpy
-    img1_array = np.array(img1)
-    img2_array = np.array(img2)
+    blended.save(result_path)
+    plot_histogram(img1, hist1_path)
+    plot_histogram(img2, hist2_path)
+    plot_histogram(blended, hist_blended_path)
 
-    # Выполняем смешивание
-    blended_array = (alpha * img1_array + (1 - alpha) * img2_array).astype(np.uint8)
-    blended_image = Image.fromarray(blended_array)
+    return render_template("result.html", 
+                           result_image=url_for('static', filename='uploads/result.png'), 
+                           hist1=url_for('static', filename='uploads/hist1.png'), 
+                           hist2=url_for('static', filename='uploads/hist2.png'), 
+                           hist_blended=url_for('static', filename='uploads/hist_blended.png'))
 
-    # Сохраняем итоговое изображение
-    output_path = os.path.join(UPLOAD_FOLDER, "result.png")
-    blended_image.save(output_path)
-
-    # Функция для построения гистограммы
-    def plot_histogram(image_array):
-        fig, ax = plt.subplots()
-        colors = ["red", "green", "blue"]
-        for i, color in enumerate(colors):
-            ax.hist(image_array[:, :, i].flatten(), bins=256, color=color, alpha=0.6)
-        ax.set_xlim(0, 255)
-
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png")
-        buf.seek(0)
-        encoded_image = base64.b64encode(buf.getvalue()).decode("utf-8")
-        plt.close(fig)
-        return encoded_image
-
-    # Генерируем гистограммы для трёх изображений
-    hist_img1 = plot_histogram(img1_array)
-    hist_img2 = plot_histogram(img2_array)
-    hist_blended = plot_histogram(blended_array)
-
-    return f'''
-        <h1>Результат</h1>
-        <h2>Смешанное изображение</h2>
-        <img src="/{output_path}" alt="Результат"><br><br>
-
-        <h2>Гистограммы</h2>
-        <h3>Исходное изображение 1</h3>
-        <img src="data:image/png;base64,{hist_img1}" alt="Гистограмма 1"><br>
-
-        <h3>Исходное изображение 2</h3>
-        <img src="data:image/png;base64,{hist_img2}" alt="Гистограмма 2"><br>
-
-        <h3>Результат смешивания</h3>
-        <img src="data:image/png;base64,{hist_blended}" alt="Гистограмма результата"><br>
-
-        <br><a href="/"><button>Назад</button></a>
-    '''
+def plot_histogram(image, save_path):
+    """Создаёт гистограмму цветового распределения изображения."""
+    img_array = np.array(image)
+    plt.figure()
+    plt.hist(img_array.ravel(), bins=256, color='orange', alpha=0.7)
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.close()
 
 if __name__ == "__main__":
     app.run(debug=True)
